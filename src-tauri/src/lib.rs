@@ -1,3 +1,4 @@
+use file_transfer_system::client::Client;
 use file_transfer_system::p2p::upnp::upnp;
 use file_transfer_system::server::Server;
 use file_transfer_system::{network, server};
@@ -5,7 +6,6 @@ use tauri::State;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
 use std::{sync::Arc, path::Path};
-use tauri::async_runtime::block_on;
 use tokio::sync::{Mutex, Notify};
 
 pub struct GlobalState {
@@ -36,10 +36,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .manage(global_state)
-        .invoke_handler(tauri::generate_handler![start_server, stop_server])
+        .invoke_handler(tauri::generate_handler![start_server, stop_server, start_client])
         .setup(|_app| {
-            block_on(start_client());
-
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())
@@ -97,7 +95,9 @@ async fn stop_server(global_state: State<'_, GlobalState>) -> Result<(), String>
     global_state.get_stop_signal().notify_waiters(); // Notify the server to stop
     Ok(())
 }
-
-async fn start_client() {
-    println!("starting client")
+#[tauri::command]
+async fn start_client(addr: String) -> Result<(), String>{
+    let mut client = Client::new(&addr);
+    client.connect().await.map_err(|e| e.to_string())?;
+    Ok(())
 }

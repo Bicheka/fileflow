@@ -18,7 +18,8 @@ tauri-build = { version = "2.0.0-rc.7", features = [] }
 tauri = { version = "2.0.6", features = [] }
 serde = { version = "1.0.213", features = ["derive"] }
 serde_json = "1.0.132"
-file-transfer-system = {git = "https://github.com/Bicheka/file-transfer-system.git", features = ["p2p"] }
+# file-transfer-system = {git = "https://github.com/Bicheka/file-transfer-system.git", features = ["p2p"] }
+file-transfer-system = {path = "../../file-transfer-system", features = ["p2p"] }
 tokio = { version = "1.41.0", features = ["full"] }
 tauri-plugin-shell = "2.0.2"
 anyhow = "1.0.91"

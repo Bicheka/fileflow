@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 const ServerConnectForm = () => {
   const [ipAddress, setIpAddress] = useState("");
   const [error, setError] = useState("");
 
   // Function to handle form submission
-  const handleConnect = (e) => {
+  const handleConnect = async (e) => {
     e.preventDefault();
 
     // Basic validation for IP address format
@@ -14,8 +15,15 @@ const ServerConnectForm = () => {
       setError("Invalid IP address format");
       return;
     }
-
     setError("");
+
+    try{
+      await invoke("start_client", {addr: ipAddress});
+    }
+    catch{
+      console.log("Could not connect to address: ", ipAddress)
+    }
+    
 
     // Perform connection logic (e.g., fetch or WebSocket)
     console.log(`Connecting to server at ${ipAddress}...`);
