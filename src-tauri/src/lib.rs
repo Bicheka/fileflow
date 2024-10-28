@@ -4,7 +4,7 @@ use file_transfer_system::{network, server};
 use tauri::State;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
-use std::sync::Arc;
+use std::{sync::Arc, path::Path};
 use tauri::async_runtime::block_on;
 use tokio::sync::{Mutex, Notify};
 
@@ -49,8 +49,8 @@ pub fn run() {
 }
 
 #[tauri::command]
-async fn start_server(global_state: State<'_, GlobalState>) -> Result<String, String> {
-    create_server(&global_state).await.unwrap();
+async fn start_server(global_state: State<'_, GlobalState>, path: &str) -> Result<String, String> {
+    create_server(&global_state, path).await.unwrap();
 
     let state_arc = global_state.get_server().await;
     let arc_clone = Arc::clone(&state_arc);
@@ -65,7 +65,7 @@ async fn start_server(global_state: State<'_, GlobalState>) -> Result<String, St
     Ok("Server Running".to_string())
 }
 
-async fn create_server(global_state: &State<'_, GlobalState>) -> Result<(), String> {
+async fn create_server(global_state: &State<'_, GlobalState>, path: &str) -> Result<(), String> {
     let stop_signal = global_state.get_stop_signal();
     let stop_signal_clone = Arc::clone(&stop_signal);
 
@@ -82,7 +82,7 @@ async fn create_server(global_state: &State<'_, GlobalState>) -> Result<(), Stri
     let state_arc = global_state.get_server().await;
     let mut arc_clone = state_arc.lock().await;
     if arc_clone.is_none() {
-        let server = Server::new(ip, port, stop_signal_clone);
+        let server = Server::new(ip, port, Path::new(path), 4096, stop_signal_clone);
         *arc_clone = Some(server);
     } else {
         println!("server already exists")
@@ -94,8 +94,7 @@ async fn create_server(global_state: &State<'_, GlobalState>) -> Result<(), Stri
 async fn stop_server(global_state: State<'_, GlobalState>) -> Result<(), String> {
     println!("Trying to stop server");
     // Notify the stop signal
-    let stop_signal = global_state.get_stop_signal();
-    stop_signal.notify_one(); // Notify the server to stop
+    global_state.get_stop_signal().notify_waiters(); // Notify the server to stop
     Ok(())
 }
 
