@@ -12,7 +12,8 @@ function Nav() {
   const location = useLocation();
   const [isServerRunning, setIsServerRunning] = useState(false);
   async function startServer() {
-    let response = await invoke("start_server");
+    // TODO see how to get a path to store files in mobiles
+    let response = await invoke("start_server",{path: "/example"});
     alert(response);
     setIsServerRunning(true);
   }
