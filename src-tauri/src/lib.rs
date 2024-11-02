@@ -30,13 +30,37 @@ impl GlobalState {
     }
 }
 
+pub struct ClientState {
+    client: Arc<Mutex<Option<Client>>>
+}
+
+impl ClientState {
+    pub fn new() -> Self {
+        Self {
+            client: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    pub async fn get_client(&self) -> Arc<Mutex<Option<Client>>> {
+        self.client.clone()
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let global_state = GlobalState::new();
+    let client_state = ClientState::new();
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .manage(global_state)
-        .invoke_handler(tauri::generate_handler![start_server, stop_server, start_client])
+        .manage(client_state)
+        .invoke_handler(tauri::generate_handler![
+            start_server, 
+            stop_server, start_client, 
+            connect, 
+            send, 
+            download
+        ])
         .setup(|_app| {
             Ok(())
         })
@@ -96,8 +120,54 @@ async fn stop_server(global_state: State<'_, GlobalState>) -> Result<(), String>
     Ok(())
 }
 #[tauri::command]
-async fn start_client(addr: String) -> Result<(), String>{
-    let mut client = Client::new(&addr);
-    client.connect().await.map_err(|e| e.to_string())?;
-    Ok(())
+async fn start_client(client_state: State<'_, ClientState>, local_path: &str, server_address: &str) -> Result<(), String>{
+    let client = client_state.get_client().await;
+    let mut client = client.lock().await;
+    let c = Client::new(local_path, server_address);
+    match *client {
+        Some(_) => Err("Server already exits".to_owned()),
+        None => {
+            *client = Some(c);
+            Ok(())
+        },
+    }
+    // client.connect().await.map_err(|e| e.to_string())?;
+}
+
+#[tauri::command]
+async fn connect(client_state: State<'_, ClientState>) -> Result<(), String> {
+    let mut client = client_state.client.lock().await;
+
+    if let Some(c) = client.as_mut() {
+        c.connect().await.map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Server is none".to_owned())
+    }
+}
+
+#[tauri::command]
+async fn send(client_state: State<'_, ClientState>, path_to_send: &str) -> Result<(), String> {
+  let client = client_state.client.lock().await;
+    if let Some(c) = client.as_ref() {
+        match c.send(path_to_send).await {
+            Ok(_) => Ok(()),
+            Err(_) => Err("could not send file/s".to_owned()),
+        }
+    } else {
+        Err("Server is none".to_owned())
+    }
+}
+
+#[tauri::command]
+async fn download(client_state: State<'_, ClientState>) -> Result<(), String> {
+  let client = client_state.client.lock().await;
+    if let Some(c) = client.as_ref() {
+        match c.download().await {
+            Ok(_) => Ok(()),
+            Err(_) => Err("could not download file/s".to_owned()),
+        }
+    } else {
+        Err("Server is none".to_owned())
+    }
 }
