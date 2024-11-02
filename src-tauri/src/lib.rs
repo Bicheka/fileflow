@@ -1,11 +1,12 @@
 use file_transfer_system::client::Client;
+use file_transfer_system::network::Request;
 use file_transfer_system::p2p::upnp::upnp;
 use file_transfer_system::server::Server;
 use file_transfer_system::{network, server};
 use tauri::State;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
-use std::{sync::Arc, path::Path};
+use std::{sync::Arc, path::Path, path::PathBuf};
 use tokio::sync::{Mutex, Notify};
 
 pub struct GlobalState {
@@ -57,8 +58,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             start_server, 
             stop_server, start_client, 
-            connect, 
-            send, 
+            connect,
+            send,
             download
         ])
         .setup(|_app| {
@@ -131,7 +132,6 @@ async fn start_client(client_state: State<'_, ClientState>, local_path: &str, se
             Ok(())
         },
     }
-    // client.connect().await.map_err(|e| e.to_string())?;
 }
 
 #[tauri::command]
@@ -146,10 +146,13 @@ async fn connect(client_state: State<'_, ClientState>) -> Result<(), String> {
     }
 }
 
+/// checks if Client exists then sends a request to the server if it is ok proceed to send
 #[tauri::command]
 async fn send(client_state: State<'_, ClientState>, path_to_send: &str) -> Result<(), String> {
-  let client = client_state.client.lock().await;
+    let request = Request::Upload;
+    let client = client_state.client.lock().await;
     if let Some(c) = client.as_ref() {
+        c.send_request(request).await.map_err(|e| e.to_string())?;
         match c.send(path_to_send).await {
             Ok(_) => Ok(()),
             Err(_) => Err("could not send file/s".to_owned()),
@@ -158,11 +161,14 @@ async fn send(client_state: State<'_, ClientState>, path_to_send: &str) -> Resul
         Err("Server is none".to_owned())
     }
 }
-
+/// checks if Client exists then sends a request to the server if it is ok proceed to download
 #[tauri::command]
-async fn download(client_state: State<'_, ClientState>) -> Result<(), String> {
-  let client = client_state.client.lock().await;
+async fn download(client_state: State<'_, ClientState>, path_to_download: &str) -> Result<(), String> {
+    let path = PathBuf::from(path_to_download);
+    let request = Request::Get(path.into_boxed_path());
+    let client = client_state.client.lock().await;
     if let Some(c) = client.as_ref() {
+        c.send_request(request).await.map_err(|e| e.to_string())?;
         match c.download().await {
             Ok(_) => Ok(()),
             Err(_) => Err("could not download file/s".to_owned()),
