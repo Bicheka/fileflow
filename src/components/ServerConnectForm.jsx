@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { desktopDir } from "@tauri-apps/api/path";
 const ServerConnectForm = () => {
-  const [ipAddress, setIpAddress] = useState("");
+  const [serverAddress, setServerAddress] = useState("");
   const [error, setError] = useState("");
 
   // Function to handle form submission
@@ -16,9 +17,12 @@ const ServerConnectForm = () => {
       return;
     }
     setError("");
-
+    const desktopPath = await desktopDir();
     try{
-      await invoke("start_client", {addr: ipAddress});
+      await invoke("start_client", {
+        serverAddress: serverAddress,
+        localPath: desktopPath
+      });
     }
     catch{
       console.log("Could not connect to address: ", ipAddress)
@@ -32,16 +36,16 @@ const ServerConnectForm = () => {
 
   return (
     <form
-      className="rounded px-1 py-4 xl:p-4 shadow-xs bg-white"
+      className="shadow-xs rounded bg-white px-1 py-4 xl:p-4"
       onSubmit={handleConnect}
     >
       <label className="mb-2 block text-sm font-bold text-gray-700">
-        IP Address
+        Server IP Address
       </label>
       <input
         type="text"
-        value={ipAddress}
-        onChange={(e) => setIpAddress(e.target.value)}
+        value={serverAddress}
+        onChange={(e) => setServerAddress(e.target.value)}
         className="mb-4 w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         placeholder="Enter IP address"
       />

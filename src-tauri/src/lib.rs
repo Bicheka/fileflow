@@ -121,7 +121,7 @@ async fn stop_server(global_state: State<'_, GlobalState>) -> Result<(), String>
     Ok(())
 }
 #[tauri::command]
-async fn start_client(client_state: State<'_, ClientState>, local_path: &str, server_address: &str) -> Result<(), String>{
+async fn start_client(client_state: State<'_, ClientState>, server_address: &str, local_path: &str) -> Result<(), String>{
     let client = client_state.get_client().await;
     let mut client = client.lock().await;
     let c = Client::new(local_path, server_address);
