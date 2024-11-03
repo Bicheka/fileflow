@@ -8,30 +8,29 @@ const ServerConnectForm = () => {
   // Function to handle form submission
   const handleConnect = async (e) => {
     e.preventDefault();
-
-    // Basic validation for IP address format
-    const ipPattern =
-      /^(25[0-5]|2[100-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$/;
-    if (!ipPattern.test(ipAddress)) {
-      setError("Invalid IP address format");
-      return;
-    }
     setError("");
     const desktopPath = await desktopDir();
+    console.log("local path: ", desktopPath);
     try{
       await invoke("start_client", {
         serverAddress: serverAddress,
-        localPath: desktopPath
+        localPath: desktopPath,
       });
+    }
+    catch{
+      setError("Could not start client: ", serverAddress)
+    }
+
+    try{
       await invoke("connect");
     }
     catch{
-      console.log("Could not connect to address: ", ipAddress)
+      setError("Could not connect to server")
     }
     
 
     // Perform connection logic (e.g., fetch or WebSocket)
-    console.log(`Connecting to server at ${ipAddress}...`);
+    console.log(`Connecting to server at ${serverAddress}...`);
     // Insert connection logic here
   };
 

@@ -1005,7 +1005,7 @@ dependencies = [
 [[package]]
 name = "file-transfer-system"
 version = "0.2.3"
-source = "git+https://github.com/Bicheka/file-transfer-system.git#3247c3631163673e59b9057c8ec5216ad3ca3702"
+source = "git+https://github.com/Bicheka/file-transfer-system.git#1dff3eb061cb37a605dfc1cf1061b8b1f5281158"
 dependencies = [
  "anyhow",
  "bincode",

@@ -6,6 +6,7 @@ use file_transfer_system::{network, server};
 use tauri::State;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
+use std::{net::IpAddr, str::FromStr};
 use std::{sync::Arc, path::Path, path::PathBuf};
 use tokio::sync::{Mutex, Notify};
 
@@ -121,14 +122,16 @@ async fn stop_server(global_state: State<'_, GlobalState>) -> Result<(), String>
     Ok(())
 }
 #[tauri::command]
-async fn start_client(client_state: State<'_, ClientState>, server_address: &str, local_path: &str) -> Result<(), String>{
+async fn start_client(client_state: State<'_, ClientState>, server_address: &str, local_path: &str) -> Result<(), String> {
     let client = client_state.get_client().await;
     let mut client = client.lock().await;
+    let server_address = IpAddr::from_str(server_address).unwrap();
     let c = Client::new(local_path, server_address);
     match *client {
-        Some(_) => Err("Server already exits".to_owned()),
+        Some(_) => Err("Server already exists".to_owned()),
         None => {
             *client = Some(c);
+            println!("client started with address: {} and local path: {}", server_address, local_path);
             Ok(())
         },
     }
@@ -136,10 +139,14 @@ async fn start_client(client_state: State<'_, ClientState>, server_address: &str
 
 #[tauri::command]
 async fn connect(client_state: State<'_, ClientState>) -> Result<(), String> {
+    println!("trying to connect");
     let mut client = client_state.client.lock().await;
-
+    println!("connect lock aquired by connect function");
     if let Some(c) = client.as_mut() {
+        println!("here 1");
         c.connect().await.map_err(|e| e.to_string())?;
+        println!("here 2");
+        println!("Connected to server");
         Ok(())
     } else {
         Err("Server is none".to_owned())
