@@ -23,6 +23,7 @@ const ServerConnectForm = () => {
         serverAddress: serverAddress,
         localPath: desktopPath
       });
+      await invoke("connect");
     }
     catch{
       console.log("Could not connect to address: ", ipAddress)
