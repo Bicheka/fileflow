@@ -139,13 +139,9 @@ async fn start_client(client_state: State<'_, ClientState>, server_address: &str
 
 #[tauri::command]
 async fn connect(client_state: State<'_, ClientState>) -> Result<(), String> {
-    println!("trying to connect");
     let mut client = client_state.client.lock().await;
-    println!("connect lock aquired by connect function");
     if let Some(c) = client.as_mut() {
-        println!("here 1");
         c.connect().await.map_err(|e| e.to_string())?;
-        println!("here 2");
         println!("Connected to server");
         Ok(())
     } else {
@@ -176,6 +172,7 @@ async fn download(client_state: State<'_, ClientState>, path_to_download: &str) 
     let client = client_state.client.lock().await;
     if let Some(c) = client.as_ref() {
         c.send_request(request).await.map_err(|e| e.to_string())?;
+        println!("Request accepted");
         match c.download().await {
             Ok(_) => Ok(()),
             Err(_) => Err("could not download file/s".to_owned()),
