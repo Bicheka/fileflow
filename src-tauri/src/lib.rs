@@ -7,7 +7,7 @@ use tauri::State;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
 use std::{net::IpAddr, str::FromStr};
-use std::{sync::Arc, path::Path, path::PathBuf};
+use std::sync::Arc;
 use tokio::sync::{Mutex, Notify};
 
 pub struct GlobalState {
@@ -106,7 +106,7 @@ async fn create_server(global_state: &State<'_, GlobalState>, path: &str) -> Res
     let state_arc = global_state.get_server().await;
     let mut arc_clone = state_arc.lock().await;
     if arc_clone.is_none() {
-        let server = Server::new(ip, port, Path::new(path), 4096, stop_signal_clone);
+        let server = Server::new(ip, port, path, 4096, stop_signal_clone);
         *arc_clone = Some(server);
     } else {
         println!("server already exists")
@@ -167,8 +167,7 @@ async fn send(client_state: State<'_, ClientState>, path_to_send: &str) -> Resul
 /// checks if Client exists then sends a request to the server if it is ok proceed to download
 #[tauri::command]
 async fn download(client_state: State<'_, ClientState>, path_to_download: &str) -> Result<(), String> {
-    let path = PathBuf::from(path_to_download);
-    let request = Request::Get(path.into_boxed_path());
+    let request = Request::Get(path_to_download.to_owned());
     let client = client_state.client.lock().await;
     if let Some(c) = client.as_ref() {
         c.send_request(request).await.map_err(|e| e.to_string())?;
